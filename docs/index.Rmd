@@ -1,0 +1,151 @@
+---
+title: 'HCHSA Post Performances: Visual Analysis in R'
+author: "Tyran Johnson"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+  theme: ceruleon
+  toc: yes
+  to_depth: 3
+  toc_float: yes
+---
+## All Packages needed for the project
+```{r message=FALSE, warning=FALSE, CACHE = TRUE}
+library(dplyr)
+library(ggplot2)
+library(gapminder)
+library(openxlsx)
+library(plotly)
+library(htmlwidgets)
+```
+
+## Data Preparation and Transforming
+```{r}
+file_path <- "C:/Users/Owner/Downloads/Post Performance(HCHSA).xlsx"
+Post_Performance <- read.xlsx(file_path, sheet = 1, startRow = 1, colNames = TRUE)
+# Changing the Date Column to display a Date str instead of num
+Post_Performance$Date <- as.Date(Post_Performance$Date - 25569, origin = "1970-01-01")
+# Convert Date to a Date-Time object if not already
+Post_Performance$Date <- as.POSIXct(Post_Performance$Date)
+# Creating a Day and Hour variable
+Post_Performance$Day <- weekdays(Post_Performance$Date)
+Post_Performance$Hour <- format(Post_Performance$Date, "%H")
+```
+
+```{r}
+# First 6 rows of data
+head.matrix(Post_Performance)
+```
+
+## Data Visualization
+```{r}
+Post_Performance$Date <- as.Date(Post_Performance$Date, format = "%Y-%m-%d")
+#Engagements Overtime
+ggplot(Post_Performance, aes(x = Date, y = Engagements)) +
+  geom_line() +
+  scale_x_date(date_breaks = "2 month", date_labels = "%b %Y") +
+  labs(title = "Total Engagement Over Time", x = "Date", y = "Total Engagement")
+```
+
+```{r warning=FALSE}
+# Likes by Network and Content Type
+ggplot(Post_Performance, aes(x = Network, y = Likes, fill = Content.Type)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "Likes by Network and Content Type")
+```
+
+```{r warning=FALSE}
+# Comments by Network and Content Type
+ggplot(Post_Performance, aes(x = Network, y = Comments, fill = Content.Type)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "Comments by Network and Content Type")
+```
+
+```{r warning=FALSE}
+# Shares by Network and Content Type
+ggplot(Post_Performance, aes(x = Network, y = Shares, fill = Content.Type)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "Shares by Network and Content Type")
+```
+
+```{r}
+# Engagement by Day of the Week
+ggplot(Post_Performance, aes(x = Day, y = Engagements)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Total Engagement by Day of the Week")
+```
+
+```{r}
+# Engagement by Hour of the Day
+ggplot(Post_Performance, aes(x = Hour, y = Engagements)) +
+  geom_bar(stat = "identity",
+           fill = "steelblue") +
+  labs(title = "Total Engagement by Hour of the Day")
+```
+
+```{r}
+# Aggregating total Impressions by day of the Week
+day_impressions <- Post_Performance %>% 
+  group_by(Day) %>% 
+  summarize(Impressions = sum(Impressions, na.rm = TRUE)) %>%
+  arrange(desc(Impressions))
+day_impressions
+```
+
+```{r}
+day_hour_data <- Post_Performance %>% group_by(Day, Hour) %>% dplyr::summarize(Engagements =n())
+ggplot(day_hour_data, aes(Day, Hour, fill = Engagements)) +
+  geom_tile(color = "white") +
+  ggtitle("Enagements Heat Map By Hour and Day")
+```
+
+```{r warning=FALSE}
+# Graph analyzing the engagement rate per impression for each Network. Engagement Rate=Engagements/Impressions (%)
+Post_Performance$EngagementRate <- Post_Performance$Engagements / Post_Performance$Impressions
+ggplot(Post_Performance, aes(x = Network, y = EngagementRate, fill = Network)) +
+  geom_boxplot() +
+  labs(title = "Engagement Rate by Network", x = "Network", y = "Engagement Rate %")
+```
+
+```{r}
+#Popularity by Content Types
+ggplot(Post_Performance, aes(x = Content.Type, fill = Content.Type)) +
+  geom_bar() +
+  labs(title = "Popularity of Content Types", x = "Content Type", y = "Count")
+```
+
+## Visualizing the Top 5 Performing Posts
+```{r}
+# Top 5 posts based on Total Engagement
+top_posts <- Post_Performance[order(-Post_Performance$Engagements),][1:5,]
+# Top 5 performing posts from Dec 08, 2022 - Dec 09, 2023
+# Rank column from my top_posts Vector to better distinguish label names
+top_posts$Rank <- paste("Rank", seq_along(top_posts$Post.ID))
+```
+
+```{r warning=FALSE}
+# Converting rank to a factor and set levels in the order I want to make things simpler to read
+top_posts$Rank <- factor(top_posts$Rank, levels = paste("Rank", 5:1))
+```
+
+```{r message=FALSE, warning=FALSE, CACHE = TRUE}
+# Using Plotly library, I will distinguish the bar colors based on Network to see which network claims the most top performances
+p <- plot_ly(top_posts, x = ~Rank, y = ~Engagements, type = 'bar', 
+             text = ~Link, hoverinfo = 'text', color = ~Network)
+p <- p %>% layout(xaxis = list(title = 'Rank'),
+                  yaxis = list(title = 'Engagements'),
+                  title = 'Top 5 Performing Posts Dec 22-Dec 23')
+
+p <- p %>% onRender("
+  function(el, x) {
+    el.on('plotly_click', function(data) {
+      var point = data.points[0];
+      if(point) {
+        window.open(point.text);
+      }
+    });
+  }
+")
+# Results for Top 5 posts across all Networks (Facebook, Twitter, IG, and LinkedIn)
+p
+```
