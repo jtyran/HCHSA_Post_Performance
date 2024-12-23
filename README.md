@@ -20,7 +20,8 @@ Engagement metrics (likes, shares, comments, views)
 Audience demographics (where available)
 
 ## Link to each version of the project
-Python: https://jtyran.github.io/HCHSA_Post_Performance/
+Python: https://github.com/jtyran/HCHSA_Post_Performance/blob/main/Python%20Version.ipynb
+
 R: https://jtyran.github.io/HCHSA_Post_Performance/
 
 Tyran Johnson
