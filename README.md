@@ -19,9 +19,9 @@ Post content (text, images, videos, impressions,
 Engagement metrics (likes, shares, comments, views)
 Audience demographics (where available)
 
-#Link to each version of project 
+## Link to each version of the project
 Python: https://jtyran.github.io/HCHSA_Post_Performance/
-R: 
+R: https://jtyran.github.io/HCHSA_Post_Performance/
 
 Tyran Johnson
 Acknowledgments
